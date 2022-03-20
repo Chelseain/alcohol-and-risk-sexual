@@ -2,7 +2,10 @@
 ## 1. Descriptive analysis of alcohol consumption
 Recode `alc_consumption` and `alc_freq` into one variable.  
 *Qestion*: what kind of graph should we make? Histogram / Bar plot seems too simple.
-## 2. Descriptive analysis of condom use (5 variables)
+## 2. Descriptive analysis of condom use (2 variables)
+Use `sex_risk` and `sex_hiv`.
+**Intended graph**: side-by-side bar plot.
+*Question*: Intended graph seems too simple.
 ## 3. Descriptive analysis of sexual partners (2 variables)
 ## 4. Relationships between alcohol consumption and condom use
 ## 5. Relationships between alcohol consumption and sexual partners
