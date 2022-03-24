@@ -1,0 +1,66 @@
+---
+title: "Plotting"
+author: "Yiqian Xin"
+date: "3/24/2022"
+output: html_document
+---
+
+# Preparation
+
+```{r import packages}
+library(tidyverse)
+```
+
+```{r Import data}
+baseline <- read_csv(file = "../data/baseline.csv")
+head(baseline)
+```
+
+```{r Figures 1-3}
+# Fig. 1. Descriptive analysis of alcohol consumption
+# Recode alc_consumption and alc_freq into one variable. 
+table(baseline$alc_consumption, useNA = "always")
+table(baseline$alc_freq, useNA = "always")
+baseline$alc <- baseline$alc_freq
+baseline$alc[baseline$alc_consumption == 0] <- 0
+table(baseline$alc, useNA = "always")
+baseline$alc <- car::recode(baseline$alc,
+                                    "0 = '0 Never';
+                                    1 = '1 Less than once per month';
+                                    2 = '2 1-3 days per month';
+                                    3 = '3 1-4 days per week';
+                                    4 = '4 5-6 days per week';
+                                    5 = '5 Daily'")
+  ggplot(data = subset(baseline, !is.na(alc)), aes(x = alc)) +
+    geom_bar() +
+    theme_minimal() + 
+    labs(x = 'Frequency of alcohol consumption',
+      y = 'Number',
+      title='How often do you have at least one alcoholic drink?') +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    scale_y_continuous(breaks = seq(from = 0, to = 1200, by = 100))
+  
+# Fig. 2. Descriptive analysis of condom use (2 variables)
+# Use sex_risk/hv019 and sex_hiv/hv022. 
+# sex_risk/hv019 - Have you had vaginal or anal sex without a condom when you were drunk or buzzed on alcohol or high on any other drug?
+# sex_hiv/hv022 - Have you ever had sex without a condom with someone you know is HIV positive?
+table(baseline$sex_risk, useNA = "always")
+table(baseline$sex_hiv, useNA = "always")
+library(patchwork)
+p1 <- ggplot(data = subset(baseline, !is.na(sex_risk)), aes(x = sex_risk)) +
+    geom_bar()
+p2 <- ggplot(data = subset(baseline, !is.na(sex_hiv)), aes(x = sex_hiv)) +
+    geom_bar()
+p1 + p2
+# Fig. 3. Descriptive analysis of sexual partners (2 variables)
+# Use sex_partners/hv003 and sex_partners_24/hv005.
+# sex_partners/hv003 - How many different sexual partners have you had in your lifetime?
+# sex_partners_24/hv005 - During the last 24 months (that is since ^FLHV005), how many sexual partners have you had?
+table(baseline$sex_partners, useNA = "always")
+table(baseline$sex_partners_24, useNA = "always")
+ggplot(data = baseline, mapping = aes(x = sex_partners)) +
+  geom_bar() 
+ggplot(data = baseline, mapping = aes(x = sex_partners_24)) +
+  geom_bar()
+```
+
