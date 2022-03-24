@@ -1,0 +1,270 @@
+---
+title: "Final Project"
+author: "Yiqian Xin, Laiang Yao & Yun YUan"
+date: "2/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Part One: Introduction
+
+## Investigation of alcohol on sexual risk behavior among aging population in rural South Africa  
+<br>  
+Alcohol plays an important part in social networking. Alcohol consumption can improve positive emotions and have bonding effects in a social setting. However, alcohol consumed in excess amount and frequency is likely to be associated with a wide range of negative consequences: symptoms of a hangover, road traffic injuries, the risk factor of behavioral problems including aggression, self-disclosure, sexual adventuresomeness (Steele & Southwick, 1985). Globally, there are 3 million premature deaths resulting from harmful use of alcohol every year (WHO, 2018). While there has been significant literature dedicating to alcohol use and sexual assaults (Lorenz & Ullman, 2016), alcohol intoxication and men’s resistance to condom use (Davis et al., 2016), the relationship between alcohol use and sexual risk behaviors on a broader scope and extending to the general population remains unclear. The goal of this study was to investigate the association of alcohol use with related sexual risk behaviors among the Health and Ageing in Africa: a Longitudinal Study of an INDEPTH Community (HAALSI) cohort.  
+<br>  
+During the wave 1 survey of the HAALSI study, 5,059 participants were randomly enrolled in the community-based survey. The response rate of the baseline survey was 89%. (HAALSI Data, n.d.) Alcohol consumption was collected by asking participants questions on the frequency of having at least one alcoholic drink (daily, 5-6 days per week, 1-4 days per week, 1-3 days per month, less than once per month). Due to missingness in the quantity of alcoholic drinks participants had on a typical day, the amount of alcohol consumed will be added in the subgroup analysis. In order to address the aforementioned gaps, we sought to describe aspects of sexual risk behavior including 1) number of different sexual partners; 2) if ever had sex without a condom when drunk; 3) if ever had sex in exchange for money, drugs, goods, or services. Baseline characteristics including sex, age, country of birth, education, marital status, HIV status are used to evaluate covariates.  
+
+
+# Part Two:Data  
+## Preparation
+
+```{r}
+# Load packages
+library(tidyverse)
+library(dataReporter)
+```
+## Variables
+1. Alcohol consumption   
+* `CM069`: Do you currently (or in the last 30 days) consume any alcoholic drinks such as beer, wine, spirits, fermented cider, thothotho or traditional beer?  
+* `CM070`: How often do you have at least one alcoholic drink?  
+* `CM071`: On days you drink, how many alcoholic drinks do you have? 
+2. Sexual risk behavior  
+* `HV017`: Do/did you use a condom with your most recent partner? **None**
+* `HV019`: Have you had vaginal or anal sex without a condom when you were drunk or buzzed on alcohol or high on any other drug?  
+* `HV020`: Have you ever had sex in exchange for money?  
+* `HV021`: When having sex for money, did you us a condom?  
+* `HV022`: Have you ever had sex without a condom with someone HIV positive?  
+* `HV003`: How many different sex partners have you had in your lifetime?  
+* `HV005`: During the last 24 months, how many sexual partners have you had?  
+3. HIV infection  
+* `CM014`: Have you ever tested positive for HIV?  
+4. Demographic variables  
+* `BD002`: How old are you (in completed years)? - age
+* `BD036`: What is the highest level of education you have attained? - education  
+* `BD038`: At what age did you begin formal schooling? - education  **None**
+* `BD039`: At what age did you finish schooling? - education **None**   
+* `BD003`: What is your current marital status? - marital status
+* Wealth index
+
+```{r}
+# Import data
+load("/Users/apple/Desktop/glhlth562/materials/final/data/HAALSI_baseline_dataverse_14Apr2017.RData")
+haalsi <- x %>%
+  select(prim_key, cm069, cm070, cm071, hv019, hv020, hv021, hv022, hv003, hv005, cm014, bd002, bd003, bd036, c_bd_country, c_bd_educ4)
+
+head(haalsi)
+```
+## Data wrangling
+```{r}
+# Tabulation
+table(haalsi$cm069, useNA = "always")
+table(haalsi$cm070, useNA = "always")
+table(haalsi$cm071, useNA = "always")
+table(haalsi$hv019, useNA = "always")
+table(haalsi$hv020, useNA = "always")
+table(haalsi$hv021, useNA = "always")
+table(haalsi$hv022, useNA = "always")
+table(haalsi$cm014, useNA = "always")
+table(haalsi$bd003, useNA = "always")
+table(haalsi$c_bd_educ4, useNA = "always")
+table(haalsi$c_bd_country, useNA = "always")
+```
+```{r}
+# Wrangling
+baseline <- haalsi %>%
+  mutate(alc_consumption = recode(cm069, 
+                                  "1 (YES) Yes" = 1,
+                                  "2 (NO) No" = 0),
+         alc_freq = recode(cm070,
+                           "5 Less than once per month" = 1,
+                           "4 1-3 days per month" = 2,
+                           "3 1-4 days per week" = 3,
+                           "2 5-6 days per week" = 4,
+                           "1 Daily" = 5),
+         alc_amount = recode(cm071,
+                             "1 less than 1 " = 1,
+                             "2 1-2" = 2,
+                             "3 3-4" = 3,
+                             "4 5 or more" = 4),
+         sex_risk = recode(hv019,
+                           "1 Yes" = 1,
+                           "2 No" = 0
+                           # "3 I do not remember" = NA
+                           ),
+         sex_work = recode(hv020,
+                           "1 (YES) Yes" = 1,
+                           "2 (NO) No" = 0),
+         sex_work_condom = recode(hv021,
+                                  "1 Yes" = 1,
+                                  "2 No" = 0
+                                  # "3 I do not remember" = NA
+                                  ),
+         sex_hiv = recode(hv022,
+                          "1 (YES) Yes" = 1,
+                          "2 (NO) No" = 0),
+         sex_partners = hv003,
+         sex_partners_24 = hv005,
+         hiv_positive = recode(cm014,
+                               "1 (YES) Yes" = 1,
+                               "2 (NO) No" = 0),
+         age = bd002,
+         marital_status = case_when(bd003 %in% c("1 Never married",
+                                                 "3 Separated/Deserted",
+                                                 "4 Divorced",
+                                                 "5 Widowed") ~ 0,
+                                    bd003 == "2 Currently married or living with partner" ~ 1)) %>%
+  select(prim_key, alc_consumption, alc_freq, alc_amount,
+         sex_risk, sex_work, sex_work_condom, sex_hiv,
+         sex_partners, sex_partners_24, hiv_positive,
+         age, marital_status, c_bd_country, c_bd_educ4)
+
+# baseline$alc_consumption <- factor(baseline$alc_consumption)
+# baseline$alc_freq <- factor(baseline$alc_freq)
+# baseline$alc_amount <- factor(baseline$alc_amount)
+# baseline$sex_risk <- factor(baseline$sex_risk)
+# baseline$sex_work <- factor(baseline$sex_work)
+# baseline$sex_work_condom <- factor(baseline$sex_work_condom)
+# baseline$sex_hiv <- factor(baseline$sex_hiv)
+# baseline$hiv_positive <- factor(baseline$hiv_positive)
+# baseline$marital_status <- factor(baseline$marital_status)
+
+```
+
+## Create codebook
+```{r include = FALSE}
+makeCodebook(baseline, replace=TRUE)
+```
+
+# Part three: Data Analysis Plan
+  Our research question is the impact of the frequency of alcohol consumption on sexual risk behaviors. To asses sexual risk behaviors, We determined that number of sexual partners, willingness to use condom during sexual intercourse as well as likelihood of using sex for work or for trade as our key indicators.We recoded the four variables mentioned above for our analysis plan. `alc_freq` is recoded for different categories of frequency of alcohol consumption. We categorized 5 groups, from daily consumers to non-alcohol drinkers (We consider less than once per month as non-alcohol drinkers). `sex_partners` is an integer that indicates the number of sexual partners. `sex_risk` is the variable that measures the usage of condoms during sexual intercourse, we recoded '1' as yes and '0' as no. Similarly, `sex_work` is also coded in the same way.  
+<br>  
+  For our preliminary exploratory data analysis, we would investigate the difference of numbers of sexual partners,willingness to use condom during sex and likelihood of using sex for trade for the different alcohol consumption groups. We hypothesized that frequent alcoholic drinkers have a higher risk of sexual risk behaviors, which is reflected by increasing number of sexual partners, lower likelihood to use condoms during sex as well as increased likelihood of using sex for trade. Our preliminary visualizations and data supports our hypothesis.  
+<br>  
+   The prevelance of each sexual risk behavior would be calculated overall and by the frequency of alcohol use. We determined to use a Chi-squared test to compare the proportions. Additionally, we decided to use regression models to investigate the association between alcohol consumption and sexual risk behavior. In order to reduce potential bias, we would adjust for baseline factors such as age, gender, education etc. For the Chi-squared test and regression model analysis, we expect our statistical conclusions to be significant by a p-value smaller than 0.05. 
+  
+
+## Preliminary exploration and visulization
+```{r Figures 1-3}
+# Fig. 1. Descriptive analysis of alcohol consumption
+# Recode alc_consumption and alc_freq into one variable. 
+table(baseline$alc_consumption, useNA = "always")
+table(baseline$alc_freq, useNA = "always")
+baseline$alc <- baseline$alc_freq
+baseline$alc[baseline$alc_consumption == 0] <- 0
+table(baseline$alc, useNA = "always")
+baseline$alc <- car::recode(baseline$alc,
+                                    "0 = '0 Never';
+                                    1 = '1 Less than once per month';
+                                    2 = '2 1-3 days per month';
+                                    3 = '3 1-4 days per week';
+                                    4 = '4 5-6 days per week';
+                                    5 = '5 Daily'")
+
+  ggplot(data = subset(baseline, !is.na(alc)), aes(x = alc)) +
+    geom_bar() +
+    theme_minimal() + 
+    labs(x = 'Frequency of alcohol consumption',
+      y = 'Number',
+      title='How often do you have at least one alcoholic drink?') +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    scale_y_continuous(breaks = seq(from = 0, to = 1200, by = 100))
+  
+# Fig. 2. Descriptive analysis of condom use (2 variables)
+# Use sex_risk/hv019 and sex_hiv/hv022. 
+# sex_risk/hv019 - Have you had vaginal or anal sex without a condom when you were drunk or buzzed on alcohol or high on any other drug?
+# sex_hiv/hv022 - Have you ever had sex without a condom with someone you know is HIV positive?
+table(baseline$sex_risk, useNA = "always")
+table(baseline$sex_hiv, useNA = "always")
+library(patchwork)
+p1 <- ggplot(data = subset(baseline, !is.na(sex_risk)), aes(x = sex_risk)) +
+    geom_bar()
+p2 <- ggplot(data = subset(baseline, !is.na(sex_hiv)), aes(x = sex_hiv)) +
+    geom_bar()
+p1 + p2
+# Fig. 3. Descriptive analysis of sexual partners (2 variables)
+# Use sex_partners/hv003 and sex_partners_24/hv005.
+# sex_partners/hv003 - How many different sexual partners have you had in your lifetime?
+# sex_partners_24/hv005 - During the last 24 months (that is since ^FLHV005), how many sexual partners have you had?
+table(baseline$sex_partners, useNA = "always")
+table(baseline$sex_partners_24, useNA = "always")
+ggplot(data = baseline, mapping = aes(x = sex_partners)) +
+  geom_bar() 
+
+ggplot(data = baseline, mapping = aes(x = sex_partners_24)) +
+  geom_bar()
+```
+
+
+```{r include = FALSE}
+#Distribution of frequency of alcohol consumption
+
+  ggplot(data=subset(baseline,!is.na(alc_freq)),aes(x=alc_freq))+
+  geom_bar()+
+  theme_minimal()+
+  labs(x='Groups of alcohol consumption',
+       y='Number',
+       title='Distribution of frequency of alcohol consumption')
+
+
+#Number of sexual partners among different alcohol consumption groups
+baseline%>%
+  subset(!is.na(alc_freq))%>%
+  #group_by(alc_freq)%>%
+  #mutate(avg_sex_partners=mean(sex_partners, na.rm=TRUE))%>%
+  #ggplot(aes(x=alc_freq, y=avg_sex_partners))+
+  #geom_point()+
+  #coord_cartesian(ylim=c(5,10))+
+  #geom_line()
+  ggplot(aes(x=alc_freq, y=sex_partners))+
+  coord_cartesian(ylim=c(0,12))+
+  geom_boxplot(color='blue')+
+  labs(x='Categories of freqeuncy of alcoholic consumption',
+       y='Number of sex partners',
+       title='Boxplot of number of sexual partners among different groups')
+  
+
+#Willingness to use condomns among different alcohol consumption groups
+
+baseline$sex_risk <- as.numeric(baseline$sex_risk)
+
+baseline%>%
+  subset(!is.na(alc_freq))%>%
+  group_by(alc_freq)%>%
+  summarise(avg=mean(sex_risk, na.rm=TRUE))%>%
+  mutate(avg_risk=avg-1)%>%
+  ggplot(aes(x=alc_freq, y=avg_risk))+
+  geom_point(size=4, color='red')+
+  labs(x='Alcohol consumption groups',
+       y='Likelihood of not using condoms',
+       title='Likelihood of not using condoms among different alcohol groups')
+
+
+#Likelihood of using sex for work or trade (goods, money etc.)
+
+baseline$sex_work <- as.numeric(baseline$sex_work)
+
+baseline%>%
+  subset(!is.na(alc_freq))%>%
+  group_by(alc_freq)%>%
+  summarise(avg=mean(sex_work, na.rm=TRUE))%>%
+  mutate(avg_sex_work=avg-1)%>%
+  ggplot(aes(x=alc_freq, y=avg_sex_work))+
+  geom_point(size=4, color='red')+
+  labs(x='Alcohol consumption groups',
+       y='Liklihood of using sex for work or trade',
+       title='Liklihood of using sex for work or trade among different alcohol groups')
+
+
+
+```
+
+## References
+  Davis, K. C., Danube, C. L., Neilson, E. C., Stappenbeck, C. A., Norris, J., George, W. H., & Kajumulo, K. F. (2016). Distal and Proximal Influences on Men’s Intentions to Resist Condoms: Alcohol, Sexual Aggression History, Impulsivity, and Social-Cognitive Factors. AIDS and Behavior, 20(S1), 147–157. https://doi.org/10.1007/s10461-015-1132-9
+  HAALSI Data. (n.d.). Retrieved February 27, 2022, from https://haalsi.org/data
+  Lorenz, K., & Ullman, S. E. (2016). Alcohol and sexual assault victimization: Research findings and future directions. Aggression and Violent Behavior, 31, 82–94. https://doi.org/10.1016/j.avb.2016.08.001
+  Steele, C. M., & Southwick, L. (1985). Alcohol and social behavior: I. The psychology of drunken excess. Journal of Personality and Social Psychology, 48(1), 18–34. https://doi.org/10.1037/0022-3514.48.1.18
+WHO. (2018, September 21). Fact sheet on alcohol. https://www.who.int/news-room/fact-sheets/detail/alcohol
+
+
