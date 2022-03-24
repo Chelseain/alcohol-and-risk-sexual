@@ -1,3 +1,6 @@
+# What has been done
+1. Add `sex` into the dataset, and write out a csv document. (xyq, 2022-3-24)
+
 # Final
 ## 1. Descriptive analysis of alcohol consumption
 Recode `alc_consumption` and `alc_freq` into one variable.  
