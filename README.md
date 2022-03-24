@@ -1,6 +1,6 @@
 # What has been done
 1. Add `sex` into the dataset, and write out a csv document. (xyq, 2022-3-24)
-2. Recode `alc_consumption` and `alc_freq` into `alc`. (YY, 2022-03-24)
+2. Recode `alc_consumption` and `alc_freq` into `alc`, and ploted figure 1-3 in the folder `plotting`. (YY, 2022-03-24)
 
 # Final
 ## 1. Descriptive analysis of alcohol consumption
