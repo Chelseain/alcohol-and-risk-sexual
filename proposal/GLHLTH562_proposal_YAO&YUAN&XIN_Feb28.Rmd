@@ -50,9 +50,9 @@ library(dataReporter)
 
 ```{r}
 # Import data
-load("data/HAALSI_baseline_dataverse_14Apr2017.RData")
+load("../data/HAALSI_baseline_dataverse_14Apr2017.RData")
 haalsi <- x %>%
-  select(prim_key, cm069, cm070, cm071, hv019, hv020, hv021, hv022, hv003, hv005, cm014, bd002, bd003, bd036, c_bd_country, c_bd_educ4)
+  select(prim_key, cm069, cm070, cm071, hv019, hv020, hv021, hv022, hv003, hv005, cm014, bd002, bd003, bd036, c_bd_country, c_bd_educ4, rsex)
 
 head(haalsi)
 ```
@@ -70,7 +70,9 @@ table(haalsi$cm014, useNA = "always")
 table(haalsi$bd003, useNA = "always")
 table(haalsi$c_bd_educ4, useNA = "always")
 table(haalsi$c_bd_country, useNA = "always")
+table(haalsi$rsex, useNA = "always")
 ```
+
 ```{r}
 # Wrangling
 baseline <- haalsi %>%
@@ -114,11 +116,14 @@ baseline <- haalsi %>%
                                                  "3 Separated/Deserted",
                                                  "4 Divorced",
                                                  "5 Widowed") ~ 0,
-                                    bd003 == "2 Currently married or living with partner" ~ 1)) %>%
+                                    bd003 == "2 Currently married or living with partner" ~ 1),
+         sex = recode(rsex,
+                      "Male" = 1,
+                      "Female" = 2)) %>%
   select(prim_key, alc_consumption, alc_freq, alc_amount,
          sex_risk, sex_work, sex_work_condom, sex_hiv,
          sex_partners, sex_partners_24, hiv_positive,
-         age, marital_status, c_bd_country, c_bd_educ4)
+         age, marital_status, c_bd_country, c_bd_educ4, sex)
 
 baseline$alc_consumption <- factor(baseline$alc_consumption)
 baseline$alc_freq <- factor(baseline$alc_freq)
@@ -129,13 +134,19 @@ baseline$sex_work_condom <- factor(baseline$sex_work_condom)
 baseline$sex_hiv <- factor(baseline$sex_hiv)
 baseline$hiv_positive <- factor(baseline$hiv_positive)
 baseline$marital_status <- factor(baseline$marital_status)
-
+baseline$sex <- factor(baseline$sex)
 ```
 
 ## Create codebook
 ```{r}
 makeCodebook(baseline, replace=TRUE)
 ```
+## Save data
+```{r}
+write.csv(baseline,"../data/baseline.csv", row.names = FALSE)
+```
+
+
 
 # Part three: Data Analysis Plan
   Our research question is the impact of the frequency of alcohol consumption on sexual risk behaviors. To asses sexual risk behaviors, We determined that number of sexual partners, willingness to use condom during sexual intercourse as well as likelihood of using sex for work or for trade as our key indicators.We recoded the four variables mentioned above for our analysis plan. `alc_freq` is recoded for different categories of frequency of alcohol consumption. We categorized 5 groups, from daily consumers to non-alcohol drinkers (We consider less than once per month as non-alcohol drinkers). `sex_partners` is an integer that indicates the number of sexual partners. `sex_risk` is the variable that measures the usage of condoms during sexual intercourse, we recoded '1' as yes and '0' as no. Similarly, `sex_work` is also coded in the same way.  
