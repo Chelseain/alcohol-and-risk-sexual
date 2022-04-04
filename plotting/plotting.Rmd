@@ -59,8 +59,8 @@ p1 + p2
 table(baseline$sex_partners, useNA = "always")
 table(baseline$sex_partners_24, useNA = "always")
 ggplot(data = baseline, mapping = aes(x = sex_partners)) +
-  geom_bar() 
+  geom_bar() +coord_cartesian(xlim=c(0,25))
 ggplot(data = baseline, mapping = aes(x = sex_partners_24)) +
-  geom_bar()
+  geom_bar()+coord_cartesian(xlim=c(0,10))
 ```
 
