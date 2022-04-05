@@ -66,12 +66,16 @@ ggplot(data = baseline, mapping = aes(x = sex_partners_24)) +
 
 
 ```Figure 5
-subset(baseline, !is.na(alc))%>%
-  group_by(alc)%>%
-  mutate(avg_sex_partners=mean(sex_partners, na.rm=TRUE))%>%
-  ggplot(aes(x=alc, y=avg_sex_partners))+
-  geom_point()+
-  geom_line()
- (不知道为啥这个只有点状图，没有办法连接成一条直线，另外具体的一些细节我也没有添加，先做个简图供参考）
+ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
+  geom_violin(scale='count', adjust=0.5)+
+  scale_fill_manual(values=c('darkorange','purple','cyan4','green','yellow'))+
+  coord_cartesian(xlim=c(0,25))+
+  geom_jitter(alpha=0.2, color='red')+
+  geom_boxplot(width=0.2, color='black', alpha=0.8)+
+  theme_minimal()+
+  labs(x='Number of Sexual Partners',
+       y=NULL,
+       title='Number of sexual partners over different alcohol groups')+
+  theme(legend.position='none')
  
 
