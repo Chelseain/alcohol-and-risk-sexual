@@ -1,0 +1,198 @@
+---
+title: "Investigation of the effect of alcohol consumption on sexual risk behaviors in rural Africa regions"
+subtitle: "GLHLTH562 Presentation"
+author: "Laiang Yao, Yiqian Xin, Yun Yuan"
+institute: "DGHI"
+date: "2022/04/08 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+
+---
+class: middle
+
+# Research Quesion
+
+##Data Set: HAALSI (Health and Aging in Africa: A Longitudinal Study of an INDEPTH Community in South Africa)
+
+##Our research interest is whether alcohol increases the likelihood of sexual risk behaviors
+
+##Our main exposure variable is frequency of alcohol consumption, main outcome variables include condum use and sexual partners
+
+---
+Data Wrangling and Preparation
+
+--
+Load Data Set and Packages
+```{r}
+library(tidyverse)
+library(ggplot2)
+baseline<-read_csv(file='https://raw.githubusercontent.com/Chelseain/alcohol-and-risk-sexual/main/data/baseline.csv')
+
+```
+--
+Data Wrangling and Preparation
+```{r}
+baseline$alc <- baseline$alc_freq
+baseline$alc[baseline$alc_consumption == 0] <- 0
+baseline$alc <- factor(baseline$alc,
+                       labels = c("Never", "Less than once per month", 
+                                  "1-3 days per month", "1-4 days per week",
+                                  "5-6 days per week", "Daily"))
+baseline$sex_risk <- factor(baseline$sex_risk,
+                            labels = c("Had no risk sexual behavior",
+                                       "Had risk sexual behavior"))
+baseline$sex_hiv <- factor(baseline$sex_hiv,
+                            labels = c("HIV-",
+                                       "HIV+"))
+baseline$sex <- factor(baseline$sex,
+                       labels = c("Male", "Female"))
+table(baseline$sex_partners, useNA = "always")
+table(baseline$sex_partners_24, useNA = "always")
+```
+---
+class: inverse, center, middle
+
+# Descriptive plotting
+
+###Alcohol Consumption
+###Condum Use
+###Sexual Partners
+
+---
+class: inverse, center, middle
+
+#Association between frequency of alcohol consumption and condum use
+
+---
+--
+Proportion of having sexual risk behaviors with condoms for different alcohol frequency groups
+
+--
+.pull-left[
+```{r plot-label, eval=FALSE}
+baseline %>%
+  filter(is.na(alc) == FALSE, is.na(sex_risk) == FALSE) %>%
+  group_by(alc, sex_risk) %>%
+  summarize(count = n()) %>%
+  mutate(proportion = round(count / sum(count) * 100, 2)) %>%
+  ggplot(aes(x = factor(alc, levels = rev(levels(alc))), 
+             y = proportion, fill = sex_risk)) +
+  geom_col() +
+  geom_text(aes(label = proportion), 
+            position = position_stack(vjust = 0.5),
+            color = "white") +
+  coord_flip() +
+  labs(title = "The percentage of risk sexual behavior signigicantly \nincreases if drink alcohol more than one days per month.",
+       x = "Frequency of alcohol consumption",
+       y = "% of risk sexual behavior") +
+  theme_minimal() +
+  theme(legend.title=element_blank(),
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 1))
+```
+]
+
+--
+.pull-right[
+```{r plot-label-out, ref.label="plot-label", echo=FALSE}
+```
+]
+
+---
+Likelihood of sexual risk behaviors among different alcohol frequency groups stratified by gender
+
+--
+```{r}
+baseline %>%
+  filter(is.na(alc) == FALSE, is.na(sex_risk) == FALSE) %>%
+  group_by(sex, alc, sex_risk) %>%
+  summarize(count = n()) %>%
+  mutate(proportion = round(count / sum(count) * 100, 2)) %>%
+  ggplot(aes(x = factor(alc, levels = rev(levels(alc))), 
+             y = proportion, fill = sex_risk)) +
+  geom_col() +
+  geom_text(aes(label = proportion), 
+            position = position_stack(vjust = 0.5),
+            color = "white") +
+  coord_flip() +
+  facet_wrap(~ sex) +
+  labs(title = "The percentage of risk sexual behavior signigicantly \nincreases if drink alcohol more than one days per month.",
+       x = "Frequency of alcohol consumption",
+       y = "% of risk sexual behavior") +
+  theme_minimal() +
+  theme(legend.title=element_blank(),
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 1))
+```
+--
+
+
+---
+
+
+class: inverse, center, middle
+
+#Association between frequency of alcohol consumption and number of sexual partners
+
+
+---
+Number of sexual partners over different alcohol frequency consumption groups
+
+--
+
+```{r}
+ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
+  geom_violin(scale='count', adjust=0.5)+
+  scale_fill_manual(values=c('chocolate1','chartreuse1','cadetblue2','burlywood2','gold', 'darkorchid1'))+
+  coord_cartesian(xlim=c(0,25))+
+  geom_jitter(alpha=0.2, color='red')+
+  geom_boxplot(width=0.2, color='black', alpha=0.8)+
+  labs(x='Number of Sexual Partners',
+       y=NULL,
+       title='Number of sexual partners over different alcohol groups')+
+  theme(legend.position='none')+
+  theme_minimal()
+  
+```
+]
+--
+
+
+---
+Number of sexual partners over different alcohol frequency consumption groups stratified by gender
+
+--
+```{r}
+ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
+  geom_violin(scale='count', adjust=0.5)+
+  scale_fill_manual(values=c('chocolate1','chartreuse1','cadetblue2','burlywood2','gold', 'darkorchid1'))+
+  coord_cartesian(xlim=c(0,25))+
+  geom_jitter(alpha=0.2, color='red')+
+  geom_boxplot(width=0.2, color='black', alpha=0.8)+
+  facet_wrap(~sex)+
+  labs(x='Number of Sexual Partners',
+       y=NULL,
+       title='Number of sexual partners over different alcohol groups, stratified by sex')+
+  theme(legend.position='none')+
+  theme_minimal() 
+  
+```
+
+
+---
+
+class: inverse, center, middle
+
+THANK YOU FOR LISTENING!
+
+
+
+
+###Slides created via the R package ###[**xaringan**](https://github.com/yihui/xaringan).
+
+###The chakra comes from [remark.js](https://remarkjs.com), [**knitr**](https://yihui.org/knitr/), and [R Markdown](https://rmarkdown.rstudio.com).
