@@ -10,6 +10,7 @@ output: html_document
 ```{r import packages}
 library(tidyverse)
 library(ggplot2)
+library(biostat3)
 ```
 
 ```{r Import data}
@@ -37,6 +38,7 @@ baseline$sex <- factor(baseline$sex,
                        labels = c("Male", "Female"))
 ```
 
+## Figure 4
 ```{r}
 # Figure 4
 baseline %>%
@@ -57,37 +59,149 @@ baseline %>%
   theme_minimal() +
   theme(legend.title=element_blank(),
         legend.position = "bottom",
-        plot.title = element_text(hjust = 1))
+        plot.title.position = "plot",
+        plot.title = element_text(hjust = 0.5))
+
+ggsave("sex_risk.png")
+  
+```
+
+## Figure 6
+### Models and tables
+```{r}
+# Model: whole population
+baseline <- baseline %>%
+  mutate(alc_0 = ifelse(alc == "Never", 1, 0),
+         alc_1 = ifelse(alc == "Less than once per month", 1, 0),
+         alc_2 = ifelse(alc == "1-3 days per month", 1, 0),
+         alc_3 = ifelse(alc == "1-4 days per week", 1, 0),
+         alc_4 = ifelse(alc == "5-6 days per week", 1, 0),
+         alc_5 = ifelse(alc == "Daily", 1, 0)) %>%
+  mutate(c_age = case_when(age < 65 ~ 0,
+                           age >= 65 ~ 1))
+
+baseline$c_age <- factor(baseline$c_age, 
+                         labels = c("Younger adults", "Older adults"))
+
+
+mod <- glm(data = baseline,
+           sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+
+or_whole <- round(lincom(mod, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "whole") %>%
+  mutate(alc = c(1:5))
   
 ```
 
 ```{r}
-# Stratified by sex
-baseline %>%
-  filter(is.na(alc) == FALSE, is.na(sex_risk) == FALSE) %>%
-  group_by(sex, alc, sex_risk) %>%
-  summarize(count = n()) %>%
-  mutate(proportion = round(count / sum(count) * 100, 2)) %>%
-  ggplot(aes(x = factor(alc, levels = rev(levels(alc))), 
-             y = proportion, fill = sex_risk)) +
-  geom_col() +
-  geom_text(aes(label = proportion), 
-            position = position_stack(vjust = 0.5),
-            color = "white") +
-  coord_flip() +
-  facet_wrap(~ sex) +
-  labs(title = "The percentage of risk sexual behavior signigicantly \nincreases if drink alcohol more than one days per month.",
-       x = "Frequency of alcohol consumption",
-       y = "% of risk sexual behavior") +
-  theme_minimal() +
-  theme(legend.title=element_blank(),
-        legend.position = "bottom",
-        plot.title = element_text(hjust = 1))
+# Model: Male
+mod_male <- glm(data = baseline %>% filter(sex == "Male"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
 
+or_male <- round(lincom(mod_male, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_male, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "male") %>%
+  mutate(alc = c(1:5))
 ```
 
+```{r}
+# Model: Female
+mod_female <- glm(data = baseline %>% filter(sex == "Female"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
 
+or_female <- round(lincom(mod_female, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_female, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "female") %>%
+  mutate(alc = c(1:5))
+```
 
+```{r}
+# Model: Younger
+mod_younger <- glm(data = baseline %>% filter(c_age == "Younger adults"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
 
+or_younger <- round(lincom(mod_younger, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_younger, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "younger") %>%
+  mutate(alc = c(1:5))
+```
 
+```{r}
+# Model: Older
+mod_older <- glm(data = baseline %>% filter(c_age == "Older adults"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
 
+or_older <- round(lincom(mod_older, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_older, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "older") %>%
+  mutate(alc = c(1:5))
+```
+
+c("Less than once per month", "1-3 days per month",
+                 "1-4 days per week", "5-6 days per week",
+                 "5-6 days per week")
+
+```{r}
+# OR table
+or <- or_whole %>%
+  rbind(or_male, or_female, or_younger, or_older) %>%
+  mutate(population = recode(population, 
+                             "whole" = 0, 
+                             "male" = 1, 
+                             "female" = 2, 
+                             "younger" = 3, 
+                             "older" = 4))
+
+or$population <- factor(or$population, 
+                        labels = c("Whole population", "Male", "Female",
+                                   "Younger (< 65)", "Older (>= 65)"))
+
+or$alc <- factor(or$alc,
+                 labels = c("Less than once per month", "1-3 days per month",
+                            "1-4 days per week", "5-6 days per week",
+                            "Daily"))
+```
+
+### Figures
+```{r}
+p <- or %>%
+  ggplot() +
+  geom_segment(aes(x = `2.5 %`, xend = `97.5 %`,
+                   y = alc, 
+                   yend = alc),
+               color = "grey", size = 1) +
+    geom_point(aes(y = alc, x = Estimate),
+               size = 3, color = "darkorange") +
+    facet_wrap(~ population, nrow = 5) +
+    scale_x_continuous(breaks = 1) +
+    labs(x = "Odds ratios (ORs) of the frequency of alcohol consumption \nreference group is non-drinker", 
+         y = "Frequency of alcohol consumption", 
+         title = "Gentoos are big birds", 
+         subtitle = "Average body mass (g) by species") +
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold"),
+          plot.title.position = "plot")
+
+ggsave("stratification.png")
+```
