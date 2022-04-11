@@ -1,0 +1,29 @@
+Executive Summary: 
+We decided to obtain our dataset from HAALSI, the Health and Aging in Africa: 
+A longitudinal Study of an INDEPTH Community in South Africa. The baseline survey,
+conducted by the Harvard Center for Population and Development Studies, in partnership
+with the MRC/Wits Rural Public Health and Health Transitions Research Unit 
+aimed to study the drivers and consequences of HIV and other NCDs in the aging 
+population in South Africa. Our central research interest is the impact of alcohol
+consumption on sexual risk behaviors among aging populations in South Africa.
+We identified two research questions, which are the effect of alcohol consumption
+on the chances of using condoms during risky sexual behaviors and the association
+between the frequency of alcohol consumption and number of sexual partners. 
+In our dataset, we selected relevant varaibles that fits our interest, including 
+sociodemographic data (sex, age, marital status etc.) as well as our primary exposure
+and outcome varaibles. Our primary exposure variable are different frequency levels
+of alcohol consumption and our outcome variables includes condum use in risky 
+situations as well as lifetime sexual partners. 
+We first decided to use descriptive visualizations to observe our primary exposure
+and outcome varaibles. It is indicated that the majority of population are less 
+likely to consume alcohol frequently and men tend to have more sexual partners than
+women, which we identified as a potential effect modifier in the later regression 
+models. We used bar graphs and boxplots to investigate the association between 
+different alcohol frequency levels and the two outcome variables. Both witnessed 
+a gradual increase of the proportion who does not use condoms in sexual risky 
+situations and the number of sexual partners as the frequency of alcohol consumption
+increases. We used logistic regression models to assess the stratified association
+of the frequency of alcohol consumption and condum use in risky situations. Similarly,
+we used linear regression for thefrequency of alcohol consumption and sexual partners.
+There are different patterns stratified by different variables and we concluded
+that there could be potential confounding varaibles that affects the association.
