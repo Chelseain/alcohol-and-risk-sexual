@@ -1,0 +1,178 @@
+---
+title: "Untitled"
+author: "Laiang Yao"
+date: "4/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(biostat3)
+
+baseline <- read_csv(file = "https://raw.githubusercontent.com/Chelseain/alcohol-and-risk-sexual/main/data/baseline.csv")
+head(baseline)
+
+```
+```{r}
+# Prepare
+baseline$alc <- baseline$alc_freq
+baseline$alc[baseline$alc_consumption == 0] <- 0
+baseline$alc <- factor(baseline$alc,
+                       labels = c("Never", "Less than once per month", 
+                                  "1-3 days per month", "1-4 days per week",
+                                  "5-6 days per week", "Daily"))
+baseline$sex_risk <- factor(baseline$sex_risk,
+                            labels = c("Had no risk sexual behavior",
+                                       "Had risk sexual behavior"))
+baseline$sex_hiv <- factor(baseline$sex_hiv,
+                            labels = c("HIV-",
+                                       "HIV+"))
+baseline$sex <- factor(baseline$sex,
+                       labels = c("Male", "Female"))
+```
+#Figure 5
+```{r}
+ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
+  geom_violin(scale='count', adjust=0.6)+
+  scale_fill_manual(values=c('#34D987','#00C58E','#00B094','#009B96','#008695','#007090'))+
+  coord_cartesian(xlim=c(0,25))+
+  geom_jitter(alpha=0.2, color='orange')+
+  geom_boxplot(width=0.2, color='black', alpha=0.8)+
+  theme_minimal()+
+  labs(x='Number of Sexual Partners',
+       y=NULL,
+       title='Number of sexual partners over different alcohol groups')+
+  theme(legend.position='none')
+
+ggsave('visualization5.png')
+```
+```{r}
+baseline <- baseline %>%
+  mutate(alc_0 = ifelse(alc == "Never", 1, 0),
+         alc_1 = ifelse(alc == "Less than once per month", 1, 0),
+         alc_2 = ifelse(alc == "1-3 days per month", 1, 0),
+         alc_3 = ifelse(alc == "1-4 days per week", 1, 0),
+         alc_4 = ifelse(alc == "5-6 days per week", 1, 0),
+         alc_5 = ifelse(alc == "Daily", 1, 0)) %>%
+  mutate(c_age = case_when(age < 65 ~ 0,
+                           age >= 65 ~ 1))
+baseline$c_age <- factor(baseline$c_age, 
+                         labels = c("Younger adults", "Older adults"))
+
+mod1<-lm(sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5, data=baseline)
+
+coefficient_whole <- round(lincom(mod1, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod1, specification = "alc_2"), 2),
+        round(lincom(mod1, specification = "alc_3"), 2),
+        round(lincom(mod1, specification = "alc_4"), 2),
+        round(lincom(mod1, specification = "alc_5"), 2)) %>%
+  mutate(population = "whole") %>%
+  mutate(alc = c(1:5))
+
+
+
+```
+
+```{r}
+mod_male<-lm(data=baseline%>%filter(sex=="Male"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_male <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_male, specification = "alc_2"), 2),
+        round(lincom(mod_male, specification = "alc_3"), 2),
+        round(lincom(mod_male, specification = "alc_4"), 2),
+        round(lincom(mod_male, specification = "alc_5"), 2)) %>%
+  mutate(population = "male") %>%
+  mutate(alc = c(1:5))
+
+```
+
+```{r}
+mod_female<-lm(data=baseline%>%filter(sex=="Female"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_female <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_female, specification = "alc_2"), 2),
+        round(lincom(mod_female, specification = "alc_3"), 2),
+        round(lincom(mod_female, specification = "alc_4"), 2),
+        round(lincom(mod_female, specification = "alc_5"), 2)) %>%
+  mutate(population = "female") %>%
+  mutate(alc = c(1:5))
+
+```
+```{r}
+mod_younger<-lm(data=baseline%>%filter(c_age=="Younger adults"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_younger <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_younger, specification = "alc_2"), 2),
+        round(lincom(mod_younger, specification = "alc_3"), 2),
+        round(lincom(mod_younger, specification = "alc_4"), 2),
+        round(lincom(mod_younger, specification = "alc_5"), 2)) %>%
+  mutate(population = "younger") %>%
+  mutate(alc = c(1:5))
+```
+
+```{r}
+mod_older<-lm(data=baseline%>%filter(c_age=="Older adults"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_older <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_older, specification = "alc_2"), 2),
+        round(lincom(mod_older, specification = "alc_3"), 2),
+        round(lincom(mod_older, specification = "alc_4"), 2),
+        round(lincom(mod_older, specification = "alc_5"), 2)) %>%
+  mutate(population = "older") %>%
+  mutate(alc = c(1:5))
+
+```
+```{r}
+co<- coefficient_whole%>%
+  rbind(coefficient_male, coefficient_female, coefficient_younger, coefficient_older)%>%
+  mutate(population=recode(population, 
+                             "whole" = 0, 
+                             "male" = 1, 
+                             "female" = 2, 
+                             "younger" = 3, 
+                             "older" = 4))
+
+co$population <- factor(co$population, 
+                        labels = c("Whole population", "Male", "Female",
+                                   "Younger (< 65)", "Older (>= 65)"))
+co$alc <- factor(co$alc,
+                 labels = c("Less than once per month", "1-3 days per month",
+                            "1-4 days per week", "5-6 days per week",
+                            "Daily"))
+
+```
+```{r}
+p<-co%>%
+  ggplot() +
+  geom_segment(aes(x = `2.5 %`, xend = `97.5 %`,
+                   y = alc, 
+                   yend = alc),
+               color = "grey", size = 1) +
+    geom_point(aes(y = alc, x = Estimate),
+               size = 3, color = "darkorange")+
+  geom_vline(xintercept=0, linetype='dotted', size=0.8)+
+    facet_wrap(~ population, nrow = 5) +
+    scale_x_continuous(n.breaks = 6) +
+    labs(x = "Coefficeints of the frequency of alcohol consumption \nreference group is non-drinker", 
+         y = "Frequency of alcohol consumption", 
+         title = "Linear regression of sexual partners over different alcohol groups", 
+         subtitle = "Stratified by age & sex") +
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold"),
+          plot.title.position = "plot")
+p
+
+ggsave('stratification2.png',
+       width=6,
+       height=8)
+
+```
