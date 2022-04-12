@@ -1,0 +1,615 @@
+---
+title: "Investigation of the effect of alcohol consumption on sexual risk behaviors in rural Africa regions"
+subtitle: "GLHLTH562 Presentation"
+author: "Laiang Yao, Yiqian Xin, Yun Yuan"
+institute: "DGHI"
+date: "2022/04/08 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+```{r set up, include=FALSE}
+knitr::opts_hooks$set(fig.callout=function(options){
+if (option$fig.callout){
+options$echo<-FALSE
+options$out.height<-'99%'
+options$fig.width<-16
+options$fig.height<-8
+}
+  options
+})
+```
+
+class: middle
+
+# Research Quesion
+
+##Data Set: HAALSI (Health and Aging in Africa: A Longitudinal Study of an INDEPTH Community in South Africa)
+
+##Our research interest is whether alcohol increases the chance of sexual risk behaviors
+
+##Our main exposure variable is frequency of alcohol consumption, main outcome variables include condum use and sexual partners
+
+---
+```{r, include=FALSE}
+library(tidyverse)
+library(dataReporter)
+library(ggplot2)
+baseline<-read_csv(file='https://raw.githubusercontent.com/Chelseain/alcohol-and-risk-sexual/main/data/baseline.csv')
+```
+
+```{r, include=FALSE}
+baseline$alc <- baseline$alc_freq
+baseline$alc[baseline$alc_consumption == 0] <- 0
+baseline$alc <- factor(baseline$alc,
+                       labels = c("Never", "Less than once per month", 
+                                  "1-3 days per month", "1-4 days per week",
+                                  "5-6 days per week", "Daily"))
+baseline$sex_risk <- factor(baseline$sex_risk,
+                            labels = c("Had no risk sexual behavior",
+                                       "Had risk sexual behavior"))
+baseline$sex_hiv <- factor(baseline$sex_hiv,
+                            labels = c("HIV-",
+                                       "HIV+"))
+baseline$sex <- factor(baseline$sex,
+                       labels = c("Male", "Female"))
+table(baseline$sex_partners, useNA = "always")
+table(baseline$sex_partners_24, useNA = "always")
+```
+class: inverse, center, middle
+
+# Descriptive plotting
+
+###Alcohol Consumption
+###Condum Use
+###Sexual Partners
+
+---
+# Visualization of alcohol consumption & condom use
+```{r, include=FALSE,echo=FALSE}
+ 
+table(baseline$sex_risk, useNA = "always")
+table(baseline$sex_hiv, useNA = "always")
+
+fig1 <- baseline %>% 
+    subset(!is.na(alc)) %>%
+    group_by(alc) %>%
+    summarise(n = n()) %>% 
+    mutate(alc_prop = n/sum(n, na.rm = TRUE), 
+           alc_pct = round(100 * alc_prop, 0)) 
+
+p1 <- ggplot(data = fig1, aes(x = rev(alc), y = alc_prop)) +
+  geom_bar(aes(fill = alc), stat="identity") +
+  geom_text(hjust = 1, 
+            # size = 3,
+            # color = "white",
+            aes( y = 0,
+                 label = paste(alc,":", n, "(", alc_pct, "%)"))) +
+  theme_void() +
+  theme(
+        text = element_text(family = "Tahoma"),
+        plot.title = element_text(
+          hjust = 0,
+                                  face = "bold",
+                                  size= 24,
+                                  # color = "white"
+          ),
+        plot.subtitle = element_text(
+          hjust = 0,
+                                     size = 18,
+                                     # color = "white"
+          ),
+        strip.text = element_text(
+          # color = "white",
+                                  size = 12),
+        plot.caption = element_text(
+          # color = "white",
+                                    hjust = 0,
+                                    size = 12),
+        legend.position = "none"
+        # panel.background = element_rect(fill =  "black"),
+        # plot.background = element_rect(fill = "black"),
+        ) + 
+  scale_fill_manual(values = c(# "#000000",
+                              # "#34D987",
+                              "#00C58E",
+                              "#00B094",
+                              "#009B96",
+                              "#008695",
+                              "#007090",
+                              "#3272A2"
+  )) +
+  labs(
+    title = "Frequency of alcohol consumption",
+    subtitle = "How often do you have at least one alcoholic drink?"
+    ) + 
+  coord_polar(theta = "y") +
+  ylim(0, 1)
+
+p1
+
+ggsave('fig1.png',width=10, height=9)
+
+library(patchwork)
+
+fig2_1 <- baseline %>% 
+    subset(!is.na(sex_risk)) %>%
+    group_by(sex_risk) %>%
+    dplyr::summarise(n = n()) %>% 
+    mutate(sex_yn = sex_risk, 
+           sex_prop = n/sum(n, na.rm = TRUE), 
+           sex_pct = round(100 * sex_prop, 0), 
+           sex_cat = "sex_risk") %>%
+    dplyr::select(-c(sex_risk))
+  
+  fig2_2 <- baseline %>% 
+    subset(!is.na(sex_hiv)) %>%
+    group_by(sex_hiv) %>%
+    dplyr::summarise(n = n()) %>% 
+    mutate(sex_yn = sex_hiv, 
+           sex_prop = n/sum(n, na.rm = TRUE), 
+           sex_pct = round(100 * sex_prop, 0), 
+           sex_cat = "sex_hiv") %>%
+    dplyr::select(-c(sex_hiv))
+  
+  fig2 <- rbind(fig2_1, fig2_2)
+  
+p2 <- ggplot(data = fig2, aes(x = sex_cat, y = sex_prop)) +
+  geom_col(aes(fill = sex_yn)) +
+  geom_text(aes(label = paste(n, "(", sex_pct, "%)")), 
+            position = position_stack(vjust = .5), 
+            # color="white", 
+            # size=3, 
+            hjust = 0
+            ) + 
+  # geom_text(
+  #   hjust = 1,
+  #           size = 3,
+  #           color = "white",
+  #           aes( 
+  #             y = 0,
+  #                label = paste(n, "(", sex_pct, "%)"))) +
+  theme_void() +
+  theme(
+        text = element_text(family = "Tahoma"),
+        plot.title = element_text(
+          hjust = 0,
+                                  face = "bold",
+                                  size= 24,
+                                  # color = "white"
+          ),
+        plot.title.position = "plot", 
+        # plot.subtitle.position = "plot", 
+        plot.subtitle = element_text(
+          hjust = 0,
+                                     size = 18,
+                                     # color = "white"
+          ),
+        strip.text = element_text(
+          # color = "white",
+                                  size = 12),
+        plot.caption = element_text(
+          # color = "white",
+                                    hjust = 0,
+                                    size = 12),
+        legend.text = element_text(
+          # color = "white",
+                                  size = 12),
+        legend.title= element_blank(), 
+        # legend.position = "none",
+        # panel.background = element_rect(fill =  "black"),
+        # plot.background = element_rect(fill = "black"),
+        ) + 
+  scale_fill_manual(values = c(# "#000000",
+                              # "#34D987",
+                              "#00C58E",
+                              # "#00B094",
+                              "#009B96",
+                               "#008695",
+                               "#007090"
+                              # "#3272A2"
+                              
+  )) +
+  labs(
+    title = "Descriptive analysis of condom use",
+    subtitle = "Have you had vaginal or anal sex without a condom when you\nwere drunk or buzzed on alcohol or high on any other drug?\nHave you ever had sex without a condom with someone you\nknow is HIV positive?"
+    ) + 
+  coord_polar(theta = "y") +
+  ylim(0, 1)
+  
+p2
+
+ggsave('fig2.png',width=16, height=9)
+
+p1+p2
+
+p12 <- p1 + p2
+
+p12
+
+ggsave('fig12.png', width=16, height=9)
+                 
+
+```
+
+```{r, echo=FALSE}
+knitr::include_graphics('fig12.png')
+```
+
+
+
+
+---
+# Distribution of sexual partners
+```{r, include=FALSE, echo=FALSE}
+table(baseline$sex_partners, useNA = "always")
+table(baseline$sex_partners_24, useNA = "always")
+library(ggpubr)
+library(cowplot)
+
+p3 <- gghistogram(
+  baseline, x = "sex_partners", 
+  add = "mean", 
+  # rug = T,
+  fill = "sex", 
+  color = "sex", 
+  palette = c("#00C58E", "#e9da8e"), 
+  title = "Distribution of the number of sexual partners had in one's lifetime",
+  xlab = "Number of sexual partners",
+  ylab = "Count")
+
+p3
+
+ggsave('fig3.png',width=16,height=9)
+
+```
+
+```{r, echo=FALSE}
+knitr::include_graphics('fig3.png')
+```
+---
+class: inverse, center, middle
+
+#Association between frequency of alcohol consumption and condum use
+
+---
+--
+## Proportion of having sexual risk behaviors with condoms for different alcohol frequency groups
+
+--
+--
+```{r,include=FALSE}
+
+library(biostat3)
+
+baseline %>%
+  filter(is.na(alc) == FALSE, is.na(sex_risk) == FALSE) %>%
+  group_by(alc, sex_risk) %>%
+  dplyr::summarize(count = n()) %>%
+  mutate(proportion = round(count / sum(count) * 100, 2)) %>%
+  ggplot(aes(x = alc, 
+             y = proportion, fill = sex_risk)) +
+  geom_col() +
+  scale_fill_manual(values = c("#dfc869", "#009B96")) +
+  geom_text(aes(label = proportion), 
+            position = position_stack(vjust = 0.5),
+            color = "white") +
+  coord_flip() +
+  labs(title = "The percentage of not using condom signigicantly \nincreases if drink alcohol more than one days per month.",
+       x = "Frequency of alcohol consumption",
+       y = "% of not using condom") +
+  theme_minimal() +
+  theme(legend.title=element_blank(),
+        legend.position = "bottom",
+        plot.title.position = "plot",
+        plot.title = element_text(hjust = 0.5))
+
+ggsave('sex_risk.png', width=7, height=4.5)
+
+```
+
+```{r, echo=FALSE}
+knitr::include_graphics('sex_risk.png')
+```
+
+--
+
+---
+## Logistic regression models
+--
+```{r,include=FALSE}
+baseline <- baseline %>%
+  mutate(alc_0 = ifelse(alc == "Never", 1, 0),
+         alc_1 = ifelse(alc == "Less than once per month", 1, 0),
+         alc_2 = ifelse(alc == "1-3 days per month", 1, 0),
+         alc_3 = ifelse(alc == "1-4 days per week", 1, 0),
+         alc_4 = ifelse(alc == "5-6 days per week", 1, 0),
+         alc_5 = ifelse(alc == "Daily", 1, 0)) %>%
+  mutate(c_age = case_when(age < 65 ~ 0,
+                           age >= 65 ~ 1))
+
+baseline$c_age <- factor(baseline$c_age, 
+                         labels = c("Younger adults", "Older adults"))
+mod <- glm(data = baseline,
+           sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+or_whole <- round(lincom(mod, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "whole") %>%
+  mutate(alc = c(1:5))
+
+mod_male <- glm(data = baseline %>% filter(sex == "Male"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+
+or_male <- round(lincom(mod_male, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_male, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_male, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "male") %>%
+  mutate(alc = c(1:5))
+
+mod_female <- glm(data = baseline %>% filter(sex == "Female"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + c_age + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+
+or_female <- round(lincom(mod_female, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_female, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_female, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "female") %>%
+  mutate(alc = c(1:5))
+
+mod_younger <- glm(data = baseline %>% filter(c_age == "Younger adults"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+or_younger <- round(lincom(mod_younger, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_younger, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_younger, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "younger") %>%
+  mutate(alc = c(1:5))
+
+mod_older <- glm(data = baseline %>% filter(c_age == "Older adults"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+or_older <- round(lincom(mod_older, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_older, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "older") %>%
+  mutate(alc = c(1:5))
+
+mod_older <- glm(data = baseline %>% filter(c_age == "Older adults"),
+               sex_risk ~ alc_1 + alc_2 + alc_3 + alc_4 + alc_5 + sex + marital_status + c_bd_country + c_bd_educ4,
+           family = "binomial"(link = "logit"))
+or_older <- round(lincom(mod_older, specification = "alc_1", eform = TRUE), 2) %>%
+  rbind(round(lincom(mod_older, specification = "alc_2", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_3", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_4", eform = TRUE), 2),
+        round(lincom(mod_older, specification = "alc_5", eform = TRUE), 2)) %>%
+  mutate(population = "older") %>%
+  mutate(alc = c(1:5))
+
+c("Less than once per month", "1-3 days per month",
+                 "1-4 days per week", "5-6 days per week",
+                 "5-6 days per week")
+
+
+or <- or_whole %>%
+  rbind(or_male, or_female, or_younger, or_older) %>%
+  mutate(population = recode(population, 
+                             "whole" = 0, 
+                             "male" = 1, 
+                             "female" = 2, 
+                             "younger" = 3, 
+                             "older" = 4))
+or$population <- factor(or$population, 
+                        labels = c("Whole population", "Male", "Female",
+                                   "Younger (< 65)", "Older (>= 65)"))
+or$alc <- factor(or$alc,
+                 labels = c("Less than once per month", "1-3 days per month",
+                            "1-4 days per week", "5-6 days per week",
+                            "Daily"))
+
+p <- or %>%
+  ggplot() +
+  geom_segment(aes(x = `2.5 %`, xend = `97.5 %`,
+                   y = alc, 
+                   yend = alc),
+               color = "grey", size = 1) +
+    geom_point(aes(y = alc, x = Estimate),
+               size = 3, color = "#009B96") +
+    geom_vline(xintercept = 1, linetype = "dotted", size = 0.8) +
+    facet_wrap(~ population, nrow = 5) +
+    scale_x_continuous(n.breaks = 8) +
+    labs(x = "Odds ratios (ORs) of the frequency of alcohol consumption \nreference group is non-drinker", 
+         y = "Frequency of alcohol consumption", 
+         title = "Logistic regression models of condom use over different frequencies of \nalcohol consumption", 
+         subtitle = "Stratified by sex and age group") +
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold"),
+          plot.title.position = "plot")
+
+ggsave('stratification1.png', width=7, height=5)
+
+```
+```{r, echo=FALSE}
+knitr::include_graphics('stratification1.png')
+```
+
+
+--
+
+
+---
+
+
+class: inverse, center, middle
+
+#Association between frequency of alcohol consumption and number of sexual partners
+
+
+---
+
+### Number of sexual partners over different alcohol frequency consumption groups
+--
+```{r, include=FALSE}
+ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
+  geom_violin(scale='count', adjust=0.6)+
+  scale_fill_manual(values=c('#34D987','#00C58E','#00B094','#009B96','#008695','#007090'))+
+  coord_cartesian(xlim=c(0,25))+
+  geom_jitter(alpha=0.2, color='orange')+
+  geom_boxplot(width=0.2, color='black', alpha=0.8)+
+  theme_minimal()+
+  labs(x='Number of Sexual Partners',
+       y=NULL,
+       title='Number of sexual partners over different alcohol groups')+
+  theme(legend.position='none')
+
+ggsave('visualization5.png',width=8, height=5)
+
+
+```
+
+```{r, echo=FALSE}
+knitr::include_graphics('visualization5.png')
+```
+
+--
+---
+### Linear regression model
+--
+```{r, include=FALSE}
+baseline <- baseline %>%
+  mutate(alc_0 = ifelse(alc == "Never", 1, 0),
+         alc_1 = ifelse(alc == "Less than once per month", 1, 0),
+         alc_2 = ifelse(alc == "1-3 days per month", 1, 0),
+         alc_3 = ifelse(alc == "1-4 days per week", 1, 0),
+         alc_4 = ifelse(alc == "5-6 days per week", 1, 0),
+         alc_5 = ifelse(alc == "Daily", 1, 0)) %>%
+  mutate(c_age = case_when(age < 65 ~ 0,
+                           age >= 65 ~ 1))
+baseline$c_age <- factor(baseline$c_age, 
+                         labels = c("Younger adults", "Older adults"))
+
+mod1<-lm(sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5, data=baseline)
+
+coefficient_whole <- round(lincom(mod1, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod1, specification = "alc_2"), 2),
+        round(lincom(mod1, specification = "alc_3"), 2),
+        round(lincom(mod1, specification = "alc_4"), 2),
+        round(lincom(mod1, specification = "alc_5"), 2)) %>%
+  mutate(population = "whole") %>%
+  mutate(alc = c(1:5))
+
+mod_male<-lm(data=baseline%>%filter(sex=="Male"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_male <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_male, specification = "alc_2"), 2),
+        round(lincom(mod_male, specification = "alc_3"), 2),
+        round(lincom(mod_male, specification = "alc_4"), 2),
+        round(lincom(mod_male, specification = "alc_5"), 2)) %>%
+  mutate(population = "male") %>%
+  mutate(alc = c(1:5))
+
+mod_female<-lm(data=baseline%>%filter(sex=="Female"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_female <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_female, specification = "alc_2"), 2),
+        round(lincom(mod_female, specification = "alc_3"), 2),
+        round(lincom(mod_female, specification = "alc_4"), 2),
+        round(lincom(mod_female, specification = "alc_5"), 2)) %>%
+  mutate(population = "female") %>%
+  mutate(alc = c(1:5))
+
+mod_younger<-lm(data=baseline%>%filter(c_age=="Younger adults"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_younger <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_younger, specification = "alc_2"), 2),
+        round(lincom(mod_younger, specification = "alc_3"), 2),
+        round(lincom(mod_younger, specification = "alc_4"), 2),
+        round(lincom(mod_younger, specification = "alc_5"), 2)) %>%
+  mutate(population = "younger") %>%
+  mutate(alc = c(1:5))
+
+mod_older<-lm(data=baseline%>%filter(c_age=="Older adults"),
+       sex_partners~alc_1+alc_2+alc_3+alc_4+alc_5      )
+
+coefficient_older <- round(lincom(mod_male, specification = "alc_1"), 2) %>%
+  rbind(round(lincom(mod_older, specification = "alc_2"), 2),
+        round(lincom(mod_older, specification = "alc_3"), 2),
+        round(lincom(mod_older, specification = "alc_4"), 2),
+        round(lincom(mod_older, specification = "alc_5"), 2)) %>%
+  mutate(population = "older") %>%
+  mutate(alc = c(1:5))
+
+co<- coefficient_whole%>%
+  rbind(coefficient_male, coefficient_female, coefficient_younger, coefficient_older)%>%
+  mutate(population=recode(population, 
+                             "whole" = 0, 
+                             "male" = 1, 
+                             "female" = 2, 
+                             "younger" = 3, 
+                             "older" = 4))
+
+co$population <- factor(co$population, 
+                        labels = c("Whole population", "Male", "Female",
+                                   "Younger (< 65)", "Older (>= 65)"))
+co$alc <- factor(co$alc,
+                 labels = c("Less than once per month", "1-3 days per month",
+                            "1-4 days per week", "5-6 days per week",
+                            "Daily"))
+
+p6<-co%>%
+  ggplot() +
+  geom_segment(aes(x = `2.5 %`, xend = `97.5 %`,
+                   y = alc, 
+                   yend = alc),
+               color = "grey", size = 1) +
+    geom_point(aes(y = alc, x = Estimate),
+               size = 3, color = "#dfc869")+
+  geom_vline(xintercept=0, linetype='dotted', size=0.8)+
+    facet_wrap(~ population, nrow = 5) +
+    scale_x_continuous(n.breaks = 8) +
+    labs(x = "Coefficeints of the frequency of alcohol consumption \nreference group is non-drinker", 
+         y = "Frequency of alcohol consumption", 
+         title = "Linear regression of sexual partners over different alcohol groups", 
+         subtitle = "Stratified by age & sex") +
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold"),
+          plot.title.position = "plot")
+p6
+
+ggsave('stratification2.png',width=7, height=4.8)
+
+```
+
+```{r, echo=FALSE}
+knitr::include_graphics('stratification2.png')
+```
+
+
+--
+ 
+
+
+---
+
+class: inverse, center, middle
+
+THANK YOU FOR LISTENING!
