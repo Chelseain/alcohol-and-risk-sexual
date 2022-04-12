@@ -32,7 +32,7 @@ class: middle
 
 ##Our research interest is whether alcohol increases the chance of sexual risk behaviors
 
-##Our main exposure variable is frequency of alcohol consumption, main outcome variables include condum use and sexual partners
+##Our main exposure variable is frequency of alcohol consumption, main outcome variables include condom use and sexual partners
 
 ---
 ```{r, include=FALSE}
@@ -65,7 +65,7 @@ class: inverse, center, middle
 # Descriptive plotting
 
 ###Alcohol Consumption
-###Condum Use
+###Condom Use
 ###Sexual Partners
 
 ---
@@ -260,7 +260,8 @@ p3 <- gghistogram(
   palette = c("#00C58E", "#e9da8e"), 
   title = "Distribution of the number of sexual partners had in one's lifetime",
   xlab = "Number of sexual partners",
-  ylab = "Count")
+  ylab = "Count") + 
+    theme(text = element_text(size = 24))
 
 p3
 
@@ -274,14 +275,11 @@ knitr::include_graphics('fig3.png')
 ---
 class: inverse, center, middle
 
-#Association between frequency of alcohol consumption and condum use
+#Association between frequency of alcohol consumption and condom use
 
 ---
---
-## Proportion of having sexual risk behaviors with condoms for different alcohol frequency groups
 
---
---
+## Proportion of having sexual risk behaviors with condoms for different alcohol frequency groups
 ```{r,include=FALSE}
 
 library(biostat3)
@@ -320,7 +318,6 @@ knitr::include_graphics('sex_risk.png')
 
 ---
 ## Logistic regression models
---
 ```{r,include=FALSE}
 baseline <- baseline %>%
   mutate(alc_0 = ifelse(alc == "Never", 1, 0),
@@ -450,8 +447,6 @@ knitr::include_graphics('stratification1.png')
 ```
 
 
---
-
 
 ---
 
@@ -464,7 +459,6 @@ class: inverse, center, middle
 ---
 
 ### Number of sexual partners over different alcohol frequency consumption groups
---
 ```{r, include=FALSE}
 ggplot(data=subset(baseline, !is.na(alc)), aes(x=sex_partners, y=alc, fill=alc))+
   geom_violin(scale='count', adjust=0.6)+
@@ -487,10 +481,8 @@ ggsave('visualization5.png',width=8, height=5)
 knitr::include_graphics('visualization5.png')
 ```
 
---
 ---
 ### Linear regression model
---
 ```{r, include=FALSE}
 baseline <- baseline %>%
   mutate(alc_0 = ifelse(alc == "Never", 1, 0),
@@ -603,8 +595,6 @@ ggsave('stratification2.png',width=7, height=4.8)
 knitr::include_graphics('stratification2.png')
 ```
 
-
---
  
 
 
